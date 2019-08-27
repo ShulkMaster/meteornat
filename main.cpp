@@ -1,5 +1,3 @@
-#pragma once
-
 #include <iostream>
 #include <cmath>
 #include <ctime>
@@ -11,7 +9,7 @@
 #define timer(x) LifeTimer t = LifeTimer(x);
 
 
-const int size = 100000;
+const int size = 8;
 
 int data[size] = {};
 
@@ -21,6 +19,10 @@ void fillArray();
 
 int *copyArray(const int *original);
 
+void swap(int *array, int i, int j);
+
+void merge(int *array, int ak, int half, int bk);
+
 void printArray(int *array, int scale);
 
 void printSortArray(int *array, const std::function<void(int *)> &sort, int scale = 1);
@@ -29,18 +31,34 @@ void printSortArray(int *array, const std::function<void(int *)> &sort, int scal
 
 void bubbleSort(int *array, bool descendent = false);
 
-void insertionSort(int *array, bool descendent = false);
+void selectionSort(int *array, bool descendent = false);
+
+void insertionSort(int *array, bool descendent);
+
+void mergeSort(int *array, int start, int range, bool descendent);
 
 int main() {
+    int scale = 1;
     fillArray();
-    printSortArray(data, [](int *dataset) -> void {
-                       insertionSort(dataset, false);
-                   },
-                   10);
+
     printSortArray(data, [](int *dataset) -> void {
                        bubbleSort(dataset, false);
                    },
-                   10);
+                   scale);
+
+    printSortArray(data, [](int *dataset) -> void {
+                       selectionSort(dataset, false);
+                   },
+                   scale);
+    printSortArray(data, [](int *dataset) -> void {
+                       insertionSort(dataset, false);
+                   },
+                   scale);
+    printSortArray(data, [](int *dataset) -> void {
+                       timer("Merge Sort")
+                       mergeSort(dataset, 0, size, false);
+                   },
+                   scale);
     return 0;
 }
 
@@ -59,11 +77,13 @@ void printArray(int *array, int scale) {
 
 void printSortArray(int *array, const std::function<void(int *)> &sort, int scale) {
     int *unsorted = copyArray(array);
+    std::cout << "=========================================================================" << std::endl;
     std::cout << "before:" << std::endl;
     printArray(unsorted, scale);
     sort(unsorted);
     std::cout << "After:" << std::endl;
     printArray(unsorted, scale);
+    std::cout << "=========================================================================" << std::endl;
     delete[] unsorted;
 }
 
@@ -83,21 +103,51 @@ int *copyArray(const int *original) {
     return array;
 }
 
+void swap(int *array, int i, int j) {
+    int temp = array[i];
+    array[i] = array[j];
+    array[j] = temp;
+}
+
+void merge(int *array, int ak, int half, int bk) {
+    int *temp = new int[bk];
+    int stackPointer = 0;
+    while (stackPointer < bk) {
+        if (array[ak] <= array[half]) {
+            temp[stackPointer] = array[ak];
+            ak++;
+        } else {
+            temp[stackPointer] = array[half];
+            half++;
+        }
+        stackPointer++;
+    }
+    for (int i = ak; i < bk; ++i) {
+        array[i] = temp[i];
+    }
+    delete[] temp;
+}
+
 void bubbleSort(int *array, bool descendent) {
     timer("Bubble Sort")
     for (int i = 0; i < size; ++i) {
-        for (int j = 0; j < size; ++j) {
-            if (array[i] < array[j]) {
-                int temp = array[i];
-                array[i] = array[j];
-                array[j] = temp;
+        for (int j = i; j < size; ++j) {
+            if (descendent) {
+                if (array[i] < array[j]) {
+                    swap(array, i, j);
+                }
+            } else {
+                if (array[i] > array[j]) {
+                    swap(array, i, j);
+                }
             }
+
         }
     }
 }
 
-void insertionSort(int *array, bool descendent) {
-    timer("Insertion Sort")
+void selectionSort(int *array, bool descendent) {
+    timer("Selection Sort")
     for (int i = 0; i < size; ++i) {
         int small = i;
         for (int j = i; j < size; ++j) {
@@ -111,8 +161,36 @@ void insertionSort(int *array, bool descendent) {
                 }
             }
         }
-        int temp = array[small];
-        array[small] = array[i];
-        array[i] = temp;
+        swap(array, small, i);
     }
+}
+
+void insertionSort(int *array, bool descendent) {
+    timer("Insertion Sort")
+    for (int i = 1; i < size; ++i) {
+        int j = i;
+        if (descendent) {
+            while (j > 0 and array[j - 1] < array[j]) {
+                swap(array, j - 1, j);
+                --j;
+            }
+        } else {
+            while (j > 0 and array[j - 1] > array[j]) {
+                swap(array, j - 1, j);
+                --j;
+            }
+        }
+
+    }
+}
+
+void mergeSort(int *array, int start, int range, bool descendent) {
+    if (range <= 2) {
+        if (array[start] > array[start+1]) swap(array, start, start+1);
+        return;
+    }
+    int half = floor(range / 2);
+    mergeSort(array, start, half, descendent);
+    mergeSort(array, half + 1, range-half, descendent);
+    merge(array, start, half, range);
 }
